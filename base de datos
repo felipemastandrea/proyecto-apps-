@@ -1,0 +1,91 @@
+
+-- Crear la base de datos
+CREATE DATABASE IF NOT EXISTS AppRecetas;
+USE AppRecetas;
+
+-- Tabla de Usuarios
+CREATE TABLE Usuarios (
+    usuario_id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    contraseña VARCHAR(100) NOT NULL,
+    dirección VARCHAR(255),
+    teléfono VARCHAR(20)
+);
+
+-- Tabla de Ingredientes
+CREATE TABLE Ingredientes (
+    ingrediente_id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    cantidad_disponible DECIMAL(10, 2) NOT NULL,
+    unidad_medida VARCHAR(50) NOT NULL,
+    usuario_id INT,
+    FOREIGN KEY (usuario_id) REFERENCES Usuarios(usuario_id) ON DELETE CASCADE
+);
+
+-- Tabla de Recetas
+CREATE TABLE Recetas (
+    receta_id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    instrucciones TEXT NOT NULL,
+    tiempo_preparacion INT NOT NULL,
+    dificultad VARCHAR(50),
+    categoría VARCHAR(50)
+);
+
+-- Tabla intermedia Receta_Ingredientes
+CREATE TABLE Receta_Ingredientes (
+    receta_id INT,
+    ingrediente_id INT,
+    cantidad_ingrediente DECIMAL(10, 2) NOT NULL,
+    PRIMARY KEY (receta_id, ingrediente_id),
+    FOREIGN KEY (receta_id) REFERENCES Recetas(receta_id) ON DELETE CASCADE,
+    FOREIGN KEY (ingrediente_id) REFERENCES Ingredientes(ingrediente_id) ON DELETE CASCADE
+);
+
+-- Tabla de Pedidos
+CREATE TABLE Pedidos (
+    pedido_id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT,
+    fecha_pedido DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM('Pendiente', 'En Proceso', 'Completado') NOT NULL,
+    FOREIGN KEY (usuario_id) REFERENCES Usuarios(usuario_id) ON DELETE CASCADE
+);
+
+-- Tabla intermedia Pedido_Ingredientes
+CREATE TABLE Pedido_Ingredientes (
+    pedido_id INT,
+    ingrediente_id INT,
+    cantidad DECIMAL(10, 2) NOT NULL,
+    PRIMARY KEY (pedido_id, ingrediente_id),
+    FOREIGN KEY (pedido_id) REFERENCES Pedidos(pedido_id) ON DELETE CASCADE,
+    FOREIGN KEY (ingrediente_id) REFERENCES Ingredientes(ingrediente_id) ON DELETE CASCADE
+);
+
+-- Tabla de Supermercados
+CREATE TABLE Supermercados (
+    supermercado_id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    dirección VARCHAR(255),
+    teléfono VARCHAR(20)
+);
+
+-- Tabla de Proveedores
+CREATE TABLE Proveedores (
+    proveedor_id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    dirección VARCHAR(255),
+    teléfono VARCHAR(20),
+    supermercado_id INT,
+    FOREIGN KEY (supermercado_id) REFERENCES Supermercados(supermercado_id) ON DELETE SET NULL
+);
+
+-- Tabla de Inventario
+CREATE TABLE Inventario (
+    inventario_id INT AUTO_INCREMENT PRIMARY KEY,
+    ingrediente_id INT,
+    supermercado_id INT,
+    cantidad_stock DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (ingrediente_id) REFERENCES Ingredientes(ingrediente_id) ON DELETE CASCADE,
+    FOREIGN KEY (supermercado_id) REFERENCES Supermercados(supermercado_id) ON DELETE CASCADE
+);
