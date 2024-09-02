@@ -1,7 +1,4 @@
 
--- Crear la base de datos
-CREATE DATABASE IF NOT EXISTS AppRecetas;
-USE AppRecetas;
 
 -- Tabla de Usuarios
 CREATE TABLE Usuarios (
