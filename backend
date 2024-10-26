@@ -1,0 +1,279 @@
+const express = require('express');
+const cors = require('cors');
+const mysql = require('mysql2');
+
+const app = express();
+const port = 3000;
+
+app.use(cors());
+app.use(express.json()); // Asegúrate de que el cuerpo de las solicitudes se pueda analizar como JSON
+
+// Crear una conexión a la base de datos MySQL
+const connection = mysql.createConnection({
+  host: 'localhost',
+  port : '3306',
+  user: 'root',
+  password: 'MyCuervo.2014',
+  database: 'food'
+});
+
+connection.connect((err) => {
+  if (err) {
+    console.error('Error al conectar a la base de datos: ', err);
+    return;
+  }
+  console.log('Conectado a la base de datos MySQL');
+});
+
+
+app.get('/', (req, res) => {
+  connection.query('SELECT 1 + 1 AS solution', (err, results) => {
+    if (err) {
+      console.error('Error al ejecutar la consulta: ', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.send(`La solución es: ${results[0].solution}`);
+  });
+});
+
+// Ruta para obtener todos los ítems (GET /items)
+//http://localhost:3000/items
+app.get('/ingredientes', (req, res) => {
+  connection.query('SELECT * FROM ingredientes', (err, results) => {
+    if (err) {
+      console.error('Error al obtener los ingredientes: ', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json(results); // Enviar los resultados como respuesta en formato JSON
+  });
+});
+
+// Ruta para agregar un ítem (POST /items)
+app.post('/ingredientes', (req, res) => {
+  const newItem = req.body; // Obtener el nuevo ítem desde el cuerpo de la solicitud
+  const query = 'INSERT INTO ingredientes (nombre, unidad_medida, ingrediente_id, cantidad_disponible, usuario_id) VALUES (?, ?, ?, ?, ?)'; // Asegúrate de ajustar el SQL según tu estructura de tabla
+  connection.query(query, [newItem.nombre,
+    newItem.unidad_medida,
+    newItem.ingrediente_id,
+    newItem.cantidad_disponible,
+    newItem.usuario_id], (err, result) => {
+    if (err) {
+      console.error('Error al agregar un ingredientes: ', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.status(201).json({ id: result.insertId, ...newItem }); // Responder con el nuevo ítem agregado
+  });
+});
+
+// Obtener todos los usuarios
+app.get('/usuarios', (req, res) => {
+  connection.query('SELECT * FROM Usuarios', (err, results) => {
+    if (err) {
+      console.error('Error al obtener los usuarios:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json(results);
+  });
+});
+
+// Agregar un nuevo usuario
+app.post('/usuarios', (req, res) => {
+  const { nombre, email, contraseña, teléfono } = req.body;
+  const query = 'INSERT INTO Usuarios (nombre, email, contraseña, teléfono) VALUES (?, ?, ?, ?)';
+
+  connection.query(query, [nombre, email, contraseña, teléfono], (err, result) => {
+    if (err) {
+      console.error('Error al agregar un usuario:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.status(201).json({ id: result.insertId, nombre, email, teléfono });
+  });
+});
+
+// Obtener todas las recetas
+app.get('/recetas', (req, res) => {
+  connection.query('SELECT * FROM Recetas', (err, results) => {
+    if (err) {
+      console.error('Error al obtener las recetas:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json(results);
+  });
+});
+
+// Agregar una nueva receta
+app.post('/recetas', (req, res) => {
+  const { nombre, instrucciones, tiempo_preparacion, dificultad, categoría } = req.body;
+  const query = 'INSERT INTO Recetas (nombre, instrucciones, tiempo_preparacion, dificultad, categoría) VALUES (?, ?, ?, ?, ?)';
+
+  connection.query(query, [nombre, instrucciones, tiempo_preparacion, dificultad, categoría], (err, result) => {
+    if (err) {
+      console.error('Error al agregar una receta:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.status(201).json({ id: result.insertId, nombre, instrucciones, tiempo_preparacion, dificultad, categoría });
+  });
+});
+
+// Actualizar una receta
+app.put('/recetas/:id', (req, res) => {
+  const { id } = req.params;
+  const { nombre, instrucciones, tiempo_preparacion, dificultad, categoría } = req.body;
+  const query = 'UPDATE Recetas SET nombre = ?, instrucciones = ?, tiempo_preparacion = ?, dificultad = ?, categoría = ? WHERE receta_id = ?';
+
+  connection.query(query, [nombre, instrucciones, tiempo_preparacion, dificultad, categoría, id], (err, result) => {
+    if (err) {
+      console.error('Error al actualizar la receta:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json({ message: 'Receta actualizada exitosamente' });
+  });
+});
+
+// Eliminar una receta
+app.delete('/recetas/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM Recetas WHERE receta_id = ?';
+
+  connection.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error al eliminar la receta:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json({ message: 'Receta eliminada exitosamente' });
+  });
+});
+
+
+// Obtener todos los pedidos
+app.get('/pedidos', (req, res) => {
+  connection.query('SELECT * FROM Pedidos', (err, results) => {
+    if (err) {
+      console.error('Error al obtener los pedidos:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json(results);
+  });
+});
+
+// Agregar un nuevo pedido
+app.post('/pedidos', (req, res) => {
+  const { usuario_id, estado } = req.body;
+  const query = 'INSERT INTO Pedidos (usuario_id, estado) VALUES (?, ?)';
+
+  connection.query(query, [usuario_id, estado], (err, result) => {
+    if (err) {
+      console.error('Error al agregar un pedido:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.status(201).json({ id: result.insertId, usuario_id, estado });
+  });
+});
+
+// Actualizar un pedido
+app.put('/pedidos/:id', (req, res) => {
+  const { id } = req.params;
+  const { estado } = req.body;
+  const query = 'UPDATE Pedidos SET estado = ? WHERE pedido_id = ?';
+
+  connection.query(query, [estado, id], (err, result) => {
+    if (err) {
+      console.error('Error al actualizar el pedido:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json({ message: 'Pedido actualizado exitosamente' });
+  });
+});
+
+// Eliminar un pedido
+app.delete('/pedidos/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM Pedidos WHERE pedido_id = ?';
+
+  connection.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error al eliminar el pedido:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json({ message: 'Pedido eliminado exitosamente' });
+  });
+});
+
+
+// Obtener todos los proveedores
+app.get('/proveedores', (req, res) => {
+  connection.query('SELECT * FROM Proveedores', (err, results) => {
+    if (err) {
+      console.error('Error al obtener los proveedores:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json(results);
+  });
+});
+
+// Agregar un nuevo proveedor
+app.post('/proveedores', (req, res) => {
+  const { nombre, dirección, teléfono, supermercado_id } = req.body;
+  const query = 'INSERT INTO Proveedores (nombre, dirección, teléfono, supermercado_id) VALUES (?, ?, ?, ?)';
+
+  connection.query(query, [nombre, dirección, teléfono, supermercado_id], (err, result) => {
+    if (err) {
+      console.error('Error al agregar un proveedor:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.status(201).json({ id: result.insertId, nombre, dirección, teléfono, supermercado_id });
+  });
+});
+
+// Actualizar un proveedor
+app.put('/proveedores/:id', (req, res) => {
+  const { id } = req.params;
+  const { nombre, dirección, teléfono, supermercado_id } = req.body;
+  const query = 'UPDATE Proveedores SET nombre = ?, dirección = ?, teléfono = ?, supermercado_id = ? WHERE proveedor_id = ?';
+
+  connection.query(query, [nombre, dirección, teléfono, supermercado_id, id], (err, result) => {
+    if (err) {
+      console.error('Error al actualizar el proveedor:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json({ message: 'Proveedor actualizado exitosamente' });
+  });
+});
+
+// Eliminar un proveedor
+app.delete('/proveedores/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM Proveedores WHERE proveedor_id = ?';
+
+  connection.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error al eliminar el proveedor:', err);
+      res.status(500).send('Error en el servidor');
+      return;
+    }
+    res.json({ message: 'Proveedor eliminado exitosamente' });
+  });
+});
+
+
+
+// Iniciar el servidor
+app.listen(port, () => {
+  console.log(`Servidor ejecutándose en http://localhost:${port}`);
+});
